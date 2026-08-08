@@ -25,22 +25,18 @@ import net.minecraftforge.fml.common.Mod;
  * of the local player when the attack cooldown is fully charged.
  */
 @Mod.EventBusSubscriber(modid = ModMain.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-public final class AutoAttack {
+public final class AutoAttackHandler {
 
   /** Controls whether the automatic attack behavior is active. */
   public static boolean enabled = true;
 
   private static final double REACH = 3.0D;
 
-  private AutoAttack() {
+  private AutoAttackHandler() {
     // Utility class; all behavior is driven by the Forge event bus.
   }
 
-  /**
-   * Checks for a target once at the end of every client tick.
-   *
-   * @param event the client tick event supplied by Forge
-   */
+  /** Checks for a target once at the end of every client tick. */
   @SubscribeEvent
   public static void onClientTick(TickEvent.ClientTickEvent event) {
     if (event.phase != TickEvent.Phase.END || !enabled) {
@@ -67,10 +63,7 @@ public final class AutoAttack {
     minecraft.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
   }
 
-  /**
-   * Finds the closest living entity whose bounding box intersects the player's
-   * three-block view ray and whose entity type is attackable by this utility.
-   */
+  /** Finds the closest eligible entity hit by the player's three-block view ray. */
   private static LivingEntity findTarget(LocalPlayer player) {
     Vec3 eyePosition = player.getEyePosition(0.0F);
     Vec3 rayEnd = eyePosition.add(player.getViewVector(0.0F).scale(REACH));
@@ -87,19 +80,14 @@ public final class AutoAttack {
         .orElse(null);
   }
 
-  /**
-   * Returns true only when the target's AABB is hit by the player's view ray.
-   */
+  /** Returns true when the target's AABB intersects the player's view ray. */
   private static boolean isInView(Entity target, Vec3 eyePosition, Vec3 rayEnd) {
     AABB entityBox = target.getBoundingBox();
     Optional<Vec3> hit = entityBox.clip(eyePosition, rayEnd);
     return hit.isPresent();
   }
 
-  /**
-   * Restricts attacks to players and hostile monsters, excluding passive
-   * animals, armor stands, dropped items, and other entity types.
-   */
+  /** Restricts attacks to players and hostile monsters. */
   private static boolean isAttackable(LivingEntity target) {
     return target.isAlive() && (target instanceof Player || target instanceof Monster);
   }
