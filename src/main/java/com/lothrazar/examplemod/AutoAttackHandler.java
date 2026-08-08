@@ -1,9 +1,8 @@
 package com.lothrazar.examplemod;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-
-import java.util.Comparator;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -41,70 +40,76 @@ public final class AutoAttackHandler {
   /** Checks for a target once at the end of every client tick. */
   @SubscribeEvent
   public static void onClientTick(TickEvent.ClientTickEvent event) {
-    if (event.phase != TickEvent.Phase.END) {
+    if (event.side.isServer()) {
       return;
     }
 
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.player == null || mc.level == null) {
-      return;
+    if (event.phase == TickEvent.Phase.END) {
+      ClientOnlyWorker.executeTick();
     }
-
-    LocalPlayer player = mc.player;
-    while (ModKeybinds.TOGGLE_KEY.consumeClick()) {
-      enabled = !enabled;
-      player.sendSystemMessage(Component.literal(
-          "§aAutoAttack is now: " + (enabled ? "§2ENABLED" : "§cDISABLED")));
-    }
-
-    if (!enabled) {
-      return;
-    }
-
-    if (player.getAttackStrengthScale(0.0F) != 1.0F) {
-      return;
-    }
-
-    LivingEntity target = findTarget(player);
-    if (target == null || target.invulnerableTime > 10) {
-      return;
-    }
-
-    Entity attackTarget = target;
-    if (mc.getConnection() == null) {
-      return;
-    }
-
-    mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(attackTarget, player.isShiftKeyDown()));
-    mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
   }
 
-  /** Finds the closest eligible entity hit by the player's three-block view ray. */
-  private static LivingEntity findTarget(LocalPlayer player) {
-    Vec3 eyePosition = player.getEyePosition(0.0F);
-    Vec3 rayEnd = eyePosition.add(player.getViewVector(1.0F).scale(REACH));
-    AABB searchBox = player.getBoundingBox().inflate(REACH);
+  /** Contains all client-only work so the event subscriber stays side-safe. */
+  private static final class ClientOnlyWorker {
 
-    List<LivingEntity> candidates = player.level().getEntitiesOfClass(
-        LivingEntity.class,
-        searchBox,
-        target -> target != player && isAttackable(target));
+    private ClientOnlyWorker() {
+      // Utility class; all work is invoked from the outer tick handler.
+    }
 
-    return candidates.stream()
-        .filter(target -> isInView(target, eyePosition, rayEnd))
-        .min(Comparator.comparingDouble(player::distanceToSqr))
-        .orElse(null);
-  }
+    private static void executeTick() {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.player == null || mc.level == null) {
+        return;
+      }
 
-  /** Returns true when the target's AABB intersects the player's view ray. */
-  private static boolean isInView(Entity target, Vec3 eyePosition, Vec3 rayEnd) {
-    AABB entityBox = target.getBoundingBox();
-    Optional<Vec3> hit = entityBox.clip(eyePosition, rayEnd);
-    return hit.isPresent();
-  }
+      LocalPlayer player = mc.player;
+      while (ModKeybinds.TOGGLE_KEY.consumeClick()) {
+        enabled = !enabled;
+        player.sendSystemMessage(Component.literal(
+            "§aAutoAttack is now: " + (enabled ? "§2ENABLED" : "§cDISABLED")));
+      }
 
-  /** Restricts attacks to players and hostile monsters. */
-  private static boolean isAttackable(LivingEntity target) {
-    return target.isAlive() && (target instanceof Player || target instanceof Monster);
+      if (!enabled || player.getAttackStrengthScale(0.0F) != 1.0F) {
+        return;
+      }
+
+      LivingEntity target = findTarget(player);
+      if (target == null || target.invulnerableTime > 10 || mc.getConnection() == null) {
+        return;
+      }
+
+      Entity attackTarget = target;
+      mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(attackTarget, player.isShiftKeyDown()));
+      mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+    }
+
+    /** Finds the closest eligible entity hit by the player's three-block view ray. */
+    private static LivingEntity findTarget(LocalPlayer player) {
+      Vec3 eyePosition = player.getEyePosition(0.0F);
+      Vec3 rayEnd = eyePosition.add(player.getViewVector(1.0F).scale(REACH));
+      AABB searchBox = player.getBoundingBox().inflate(REACH);
+
+      List<LivingEntity> candidates = player.level().getEntitiesOfClass(
+          LivingEntity.class,
+          searchBox,
+          target -> target != player && isAttackable(target));
+
+      return candidates.stream()
+          .filter(target -> isInView(target, eyePosition, rayEnd))
+          .min(Comparator.comparingDouble(player::distanceToSqr))
+          .orElse(null);
+    }
+
+    /** Returns true when the target's AABB intersects the player's view ray. */
+    private static boolean isInView(Entity target, Vec3 eyePosition, Vec3 rayEnd) {
+      AABB entityBox = target.getBoundingBox();
+      Optional<Vec3> hit = entityBox.clip(eyePosition, rayEnd);
+      return hit.isPresent();
+    }
+
+    /** Restricts attacks to players and hostile monsters. */
+    private static boolean isAttackable(LivingEntity target) {
+      return target.isAlive() && (target instanceof Player || target instanceof Monster);
+    }
   }
 }
