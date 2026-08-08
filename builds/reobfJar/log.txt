@@ -137,8 +137,10 @@ Writing Output: /workspaces/AutoAttackAnother/builds/reobfJar/output.jar
   com/
   com/lothrazar/
   com/lothrazar/examplemod/
-  com/lothrazar/examplemod/AutoAttack.class
+  com/lothrazar/examplemod/AutoAttackHandler.class
   com/lothrazar/examplemod/ConfigManager.class
+  com/lothrazar/examplemod/KeybindHandler.class
+  com/lothrazar/examplemod/KeybindTickHandler.class
   com/lothrazar/examplemod/ModMain.class
   com/lothrazar/examplemod/ModRegistry.class
   pack.mcmeta
