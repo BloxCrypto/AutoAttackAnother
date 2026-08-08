@@ -62,7 +62,8 @@ public final class AutoAttack {
       return;
     }
 
-    minecraft.getConnection().send(ServerboundInteractPacket.attack(target, player.isShiftKeyDown()));
+    Entity attackTarget = target;
+    minecraft.getConnection().send(ServerboundInteractPacket.createAttackPacket(attackTarget, player.isShiftKeyDown()));
     minecraft.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
   }
 
