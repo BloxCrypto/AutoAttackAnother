@@ -1,11 +1,13 @@
 package com.lothrazar.examplemod;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import java.util.Comparator;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.world.InteractionHand;
@@ -39,13 +41,23 @@ public final class AutoAttackHandler {
   /** Checks for a target once at the end of every client tick. */
   @SubscribeEvent
   public static void onClientTick(TickEvent.ClientTickEvent event) {
-    if (event.phase != TickEvent.Phase.END || !enabled) {
+    if (event.phase != TickEvent.Phase.END) {
       return;
     }
 
-    Minecraft minecraft = Minecraft.getInstance();
-    LocalPlayer player = minecraft.player;
-    if (player == null || minecraft.getConnection() == null) {
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.player == null || mc.level == null) {
+      return;
+    }
+
+    LocalPlayer player = mc.player;
+    while (ModKeybinds.TOGGLE_KEY.consumeClick()) {
+      enabled = !enabled;
+      player.sendSystemMessage(Component.literal(
+          "§aAutoAttack is now: " + (enabled ? "§2ENABLED" : "§cDISABLED")));
+    }
+
+    if (!enabled) {
       return;
     }
 
@@ -59,14 +71,18 @@ public final class AutoAttackHandler {
     }
 
     Entity attackTarget = target;
-    minecraft.getConnection().send(ServerboundInteractPacket.createAttackPacket(attackTarget, player.isShiftKeyDown()));
-    minecraft.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+    if (mc.getConnection() == null) {
+      return;
+    }
+
+    mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(attackTarget, player.isShiftKeyDown()));
+    mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
   }
 
   /** Finds the closest eligible entity hit by the player's three-block view ray. */
   private static LivingEntity findTarget(LocalPlayer player) {
     Vec3 eyePosition = player.getEyePosition(0.0F);
-    Vec3 rayEnd = eyePosition.add(player.getViewVector(0.0F).scale(REACH));
+    Vec3 rayEnd = eyePosition.add(player.getViewVector(1.0F).scale(REACH));
     AABB searchBox = player.getBoundingBox().inflate(REACH);
 
     List<LivingEntity> candidates = player.level().getEntitiesOfClass(

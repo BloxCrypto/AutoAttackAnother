@@ -13,12 +13,12 @@ issueTrackerURL="https://github.com/Lothrazar/ForgeTemplate/issues" #optional
 # A list of mods - how many allowed here is determined by the individual mod loader
 [[mods]] #mandatory
 # The modid of the mod
-modId="examplemod" #mandatory
+modId="attack" #mandatory
 # The version number of the mod - there's a few well known null variables useable here or just hardcode it
 version="0.0.0-SNAPSHOT" #mandatory
  # A display name for the mod
  
-displayName="examplemod" #mandatory
+displayName="Attacker" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification <here>
 updateJSONURL="https://raw.githubusercontent.com/Lothrazar/ForgeTemplate/trunk/1.20/update.json" #optional
 # A URL for the "homepage" for this mod, displayed in the mod UI # replace with your website
@@ -33,22 +33,22 @@ authors="Lothrazar" #optional
 # The description text for the mod (multi line!) (#mandatory)
 
 description='''
-examplemod by Lothrazar
+Attacker by Lothrazar
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
-[[dependencies.examplemod]] #optional
+[[dependencies.attack]] #optional
     modId="forge" 
     mandatory=true 
     versionRange="[47.1,)" 
     ordering="NONE"
     side="BOTH"
-[[dependencies.examplemod]]
+[[dependencies.attack]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.20.1,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.examplemod]]
+[[dependencies.attack]]
     modId="flib"
     mandatory=true
     versionRange="[0.0.14,)"
